@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.68"
+itertools = "0.10.5"
 
 [[bin]]
 name = "01"
@@ -15,3 +16,7 @@ path = "src/01.rs"
 [[bin]]
 name = "02"
 path = "src/02.rs"
+
+[[bin]]
+name = "03"
+path = "src/03.rs"

@@ -1,13 +1,13 @@
+use anyhow::{anyhow, bail, Result};
 use std::char;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use anyhow::{Result, bail, anyhow};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Shape {
     ROCK = 0,
     PAPER = 1,
-    SCISSOR = 2
+    SCISSOR = 2,
 }
 use Shape::*;
 
@@ -19,7 +19,7 @@ impl TryFrom<i32> for Shape {
             0 => Ok(ROCK),
             1 => Ok(PAPER),
             2 => Ok(SCISSOR),
-            v => Err(anyhow!("Invalid value: {}", v))
+            v => Err(anyhow!("Invalid value: {}", v)),
         }
     }
 }
@@ -29,7 +29,7 @@ impl Shape {
         match self {
             ROCK => 1,
             PAPER => 2,
-            SCISSOR => 3
+            SCISSOR => 3,
         }
     }
 }
@@ -47,16 +47,14 @@ impl RoundResult {
         match self {
             LOSS => 0,
             DRAW => 3,
-            WIN => 6
+            WIN => 6,
         }
     }
 }
 
 fn get_round_result(me: Shape, opponent: Shape) -> RoundResult {
-    const ROUND_RESULT: [[RoundResult; 3]; 3] = 
-        [[DRAW, LOSS,  WIN],
-        [ WIN, DRAW, LOSS],
-        [LOSS,  WIN, DRAW]];
+    const ROUND_RESULT: [[RoundResult; 3]; 3] =
+        [[DRAW, LOSS, WIN], [WIN, DRAW, LOSS], [LOSS, WIN, DRAW]];
     ROUND_RESULT[me as usize][opponent as usize]
 }
 
@@ -70,14 +68,14 @@ fn main() -> Result<()> {
             'A' => ROCK,
             'B' => PAPER,
             'C' => SCISSOR,
-            c => bail!("Unexpected character {}", c)
+            c => bail!("Unexpected character {}", c),
         };
 
         let me = match chars[2] {
             'X' => ROCK,
             'Y' => PAPER,
             'Z' => SCISSOR,
-            c => bail!("Unexpected character {}", c)
+            c => bail!("Unexpected character {}", c),
         };
 
         sum += me.score() + get_round_result(me, opponent).score();
@@ -93,14 +91,14 @@ fn main() -> Result<()> {
             'A' => ROCK,
             'B' => PAPER,
             'C' => SCISSOR,
-            c => bail!("Unexpected character {}", c)
+            c => bail!("Unexpected character {}", c),
         };
 
         let outcome = match chars[2] {
             'X' => LOSS,
             'Y' => DRAW,
             'Z' => WIN,
-            c => bail!("Unexpected character {}", c)
+            c => bail!("Unexpected character {}", c),
         };
 
         let me = match outcome {
