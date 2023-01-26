@@ -11,58 +11,57 @@ struct Monkey<T> {
     test: Box<dyn Fn(&T) -> usize>,
 }
 
+const MONKEY_NB: usize = 8;
+const MONKEY_DIVS: [i32; MONKEY_NB] = [19, 3, 13, 17, 2, 11, 5, 7];
+
 // store remainder for each monkey
 #[derive(Debug, Clone, Copy)]
-struct ItemRem<const N: usize> {
-    rems: [i32; N],
-    divs: [i32; N],
-}
+struct ItemRem([i32; MONKEY_NB]);
 
-impl<const N: usize> ItemRem<N> {
-    fn new(v: i32, divs: [i32; N]) -> Self {
-        let mut rems = [0; N];
-        for i in 0..N {
-            rems[i] = v % divs[i];
+impl ItemRem {
+    fn new(v: i32) -> Self {
+        let mut rems = [0; MONKEY_NB];
+        for i in 0..MONKEY_NB {
+            rems[i] = v % MONKEY_DIVS[i];
         }
-        Self { rems, divs }
+        Self(rems)
     }
 }
 
-impl<const N: usize> Add<i32> for ItemRem<N> {
+impl Add<i32> for ItemRem {
     type Output = Self;
 
     fn add(self, rhs: i32) -> Self::Output {
         let mut tmp = self;
-        for i in 0..N {
-            tmp.rems[i] += rhs;
-            tmp.rems[i] %= tmp.divs[i];
+        for i in 0..MONKEY_NB {
+            tmp.0[i] += rhs;
+            tmp.0[i] %= MONKEY_DIVS[i];
         }
         tmp
     }
 }
 
-impl<const N: usize> Mul<i32> for ItemRem<N> {
+impl Mul<i32> for ItemRem {
     type Output = Self;
 
     fn mul(self, rhs: i32) -> Self::Output {
         let mut tmp = self;
-        for i in 0..N {
-            tmp.rems[i] *= rhs;
-            tmp.rems[i] %= tmp.divs[i];
+        for i in 0..MONKEY_NB {
+            tmp.0[i] *= rhs;
+            tmp.0[i] %= MONKEY_DIVS[i];
         }
         tmp
     }
 }
 
-impl<const N: usize> Mul<Self> for ItemRem<N> {
+impl Mul<Self> for ItemRem {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        assert!(self.divs == rhs.divs);
         let mut tmp = self;
-        for i in 0..N {
-            tmp.rems[i] *= rhs.rems[i];
-            tmp.rems[i] %= tmp.divs[i];
+        for i in 0..MONKEY_NB {
+            tmp.0[i] *= rhs.0[i];
+            tmp.0[i] %= MONKEY_DIVS[i];
         }
         tmp
     }
@@ -137,95 +136,74 @@ fn main() -> Result<()> {
     println!("{monkey_business}");
 
     // part 2
-    const N: usize = 8;
-    const MONKEY_DIVS: [i32; N] = [19, 3, 13, 17, 2, 11, 5, 7];
     let mut monkeys = Vec::new();
-    monkeys.push(Monkey::<ItemRem<N>> {
+    monkeys.push(Monkey::<ItemRem> {
         inspected: 0,
         items: VecDeque::from(
             [65, 58, 93, 57, 66]
                 .into_iter()
-                .map(|v| ItemRem::new(v, MONKEY_DIVS))
+                .map(ItemRem::new)
                 .collect_vec(),
         ),
         operation: Box::new(|&v| v * 7),
-        test: Box::new(|v| if v.rems[0] == 0 { 6 } else { 4 }),
+        test: Box::new(|v| if v.0[0] == 0 { 6 } else { 4 }),
     });
-    monkeys.push(Monkey::<ItemRem<N>> {
+    monkeys.push(Monkey::<ItemRem> {
         inspected: 0,
         items: VecDeque::from(
             [76, 97, 58, 72, 57, 92, 82]
                 .into_iter()
-                .map(|v| ItemRem::new(v, MONKEY_DIVS))
+                .map(ItemRem::new)
                 .collect_vec(),
         ),
         operation: Box::new(|&v| v + 4),
-        test: Box::new(|v| if v.rems[1] == 0 { 7 } else { 5 }),
+        test: Box::new(|v| if v.0[1] == 0 { 7 } else { 5 }),
     });
-    monkeys.push(Monkey::<ItemRem<N>> {
+    monkeys.push(Monkey::<ItemRem> {
         inspected: 0,
-        items: VecDeque::from(
-            [90, 89, 96]
-                .into_iter()
-                .map(|v| ItemRem::new(v, MONKEY_DIVS))
-                .collect_vec(),
-        ),
+        items: VecDeque::from([90, 89, 96].into_iter().map(ItemRem::new).collect_vec()),
         operation: Box::new(|&v| v * 5),
-        test: Box::new(|v| if v.rems[2] == 0 { 5 } else { 1 }),
+        test: Box::new(|v| if v.0[2] == 0 { 5 } else { 1 }),
     });
-    monkeys.push(Monkey::<ItemRem<N>> {
+    monkeys.push(Monkey::<ItemRem> {
         inspected: 0,
-        items: VecDeque::from(
-            [72, 63, 72, 99]
-                .into_iter()
-                .map(|v| ItemRem::new(v, MONKEY_DIVS))
-                .collect_vec(),
-        ),
+        items: VecDeque::from([72, 63, 72, 99].into_iter().map(ItemRem::new).collect_vec()),
         operation: Box::new(|&v| v * v),
-        test: Box::new(|v| if v.rems[3] == 0 { 0 } else { 4 }),
+        test: Box::new(|v| if v.0[3] == 0 { 0 } else { 4 }),
     });
-    monkeys.push(Monkey::<ItemRem<N>> {
+    monkeys.push(Monkey::<ItemRem> {
         inspected: 0,
-        items: VecDeque::from(
-            [65].into_iter()
-                .map(|v| ItemRem::new(v, MONKEY_DIVS))
-                .collect_vec(),
-        ),
+        items: VecDeque::from([65].into_iter().map(ItemRem::new).collect_vec()),
         operation: Box::new(|&v| v + 1),
-        test: Box::new(|v| if v.rems[4] == 0 { 6 } else { 2 }),
+        test: Box::new(|v| if v.0[4] == 0 { 6 } else { 2 }),
     });
-    monkeys.push(Monkey::<ItemRem<N>> {
+    monkeys.push(Monkey::<ItemRem> {
         inspected: 0,
-        items: VecDeque::from(
-            [97, 71]
-                .into_iter()
-                .map(|v| ItemRem::new(v, MONKEY_DIVS))
-                .collect_vec(),
-        ),
+        items: VecDeque::from([97, 71].into_iter().map(ItemRem::new).collect_vec()),
         operation: Box::new(|&v| v + 8),
-        test: Box::new(|v| if v.rems[5] == 0 { 7 } else { 3 }),
+        test: Box::new(|v| if v.0[5] == 0 { 7 } else { 3 }),
     });
-    monkeys.push(Monkey::<ItemRem<N>> {
+    monkeys.push(Monkey::<ItemRem> {
         inspected: 0,
         items: VecDeque::from(
             [83, 68, 88, 55, 87, 67]
                 .into_iter()
-                .map(|v| ItemRem::new(v, MONKEY_DIVS))
+                .map(ItemRem::new)
                 .collect_vec(),
         ),
         operation: Box::new(|&v| v + 2),
-        test: Box::new(|v| if v.rems[6] == 0 { 2 } else { 1 }),
+        test: Box::new(|v| if v.0[6] == 0 { 2 } else { 1 }),
     });
-    monkeys.push(Monkey::<ItemRem<N>> {
+    monkeys.push(Monkey::<ItemRem> {
         inspected: 0,
         items: VecDeque::from(
             [64, 81, 50, 96, 82, 53, 62, 92]
                 .into_iter()
-                .map(|v| ItemRem::new(v, MONKEY_DIVS))
+                .map(ItemRem::new)
                 .collect_vec(),
         ),
         operation: Box::new(|&v| v + 5),
-        test: Box::new(|v| if v.rems[7] == 0 { 3 } else { 0 }),
+        test: Box::new(|v| if v.0[7] == 0 { 3 } else { 0 }),
     });
 
     for _ in 0..10000 {
