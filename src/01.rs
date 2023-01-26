@@ -34,7 +34,7 @@ fn main() -> Result<()> {
             curr += line.parse::<i32>()?;
         }
     }
-    let sum = top3.iter().fold(0, |acc, e| acc + e);
+    let sum: i32 = top3.iter().sum();
     println!("{}", sum);
 
     Ok(())

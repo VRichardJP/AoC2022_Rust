@@ -21,8 +21,8 @@ struct ItemRem([i32; MONKEY_NB]);
 impl ItemRem {
     fn new(v: i32) -> Self {
         let mut rems = [0; MONKEY_NB];
-        for i in 0..MONKEY_NB {
-            rems[i] = v % MONKEY_DIVS[i];
+        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS.iter()) {
+            *r = v % *p;
         }
         Self(rems)
     }
@@ -32,12 +32,12 @@ impl Add<i32> for ItemRem {
     type Output = Self;
 
     fn add(self, rhs: i32) -> Self::Output {
-        let mut tmp = self;
-        for i in 0..MONKEY_NB {
-            tmp.0[i] += rhs;
-            tmp.0[i] %= MONKEY_DIVS[i];
+        let mut rems = self.0;
+        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS.iter()) {
+            *r += rhs;
+            *r %= *p;
         }
-        tmp
+        Self(rems)
     }
 }
 
@@ -45,12 +45,12 @@ impl Mul<i32> for ItemRem {
     type Output = Self;
 
     fn mul(self, rhs: i32) -> Self::Output {
-        let mut tmp = self;
-        for i in 0..MONKEY_NB {
-            tmp.0[i] *= rhs;
-            tmp.0[i] %= MONKEY_DIVS[i];
+        let mut rems = self.0;
+        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS.iter()) {
+            *r *= rhs;
+            *r %= *p;
         }
-        tmp
+        Self(rems)
     }
 }
 
@@ -58,12 +58,12 @@ impl Mul<Self> for ItemRem {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        let mut tmp = self;
-        for i in 0..MONKEY_NB {
-            tmp.0[i] *= rhs.0[i];
-            tmp.0[i] %= MONKEY_DIVS[i];
+        let mut rems = self.0;
+        for ((r1, r2), p) in rems.iter_mut().zip(rhs.0.iter()).zip(MONKEY_DIVS.iter()) {
+            *r1 *= *r2;
+            *r1 %= *p;
         }
-        tmp
+        Self(rems)
     }
 }
 

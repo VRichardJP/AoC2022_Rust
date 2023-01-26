@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
-struct CPU {
+struct Cpu {
     clock: usize,
     x: i32,
     // instruction and elapsed cycles on it
@@ -12,12 +12,12 @@ struct CPU {
 
 #[derive(Debug, Clone, Copy)]
 enum Instruction {
-    NOOP,
-    ADDX(i32),
+    Noop,
+    Addx(i32),
 }
 use Instruction::*;
 
-impl Default for CPU {
+impl Default for Cpu {
     fn default() -> Self {
         Self {
             clock: 0,
@@ -27,7 +27,7 @@ impl Default for CPU {
     }
 }
 
-impl CPU {
+impl Cpu {
     fn get_signal_strength(&self) -> i32 {
         self.clock as i32 * self.x
     }
@@ -39,8 +39,8 @@ impl CPU {
         instr.1 += 1;
 
         self.instr = match instr {
-            (NOOP, 1) => None,
-            (ADDX(v), 2) => {
+            (Noop, 1) => None,
+            (Addx(v), 2) => {
                 self.x += v;
                 None
             }
@@ -57,7 +57,7 @@ fn main() -> Result<()> {
     // part 1
     let file = File::open("data/10.txt")?;
     let mut lines = BufReader::new(file).lines();
-    let mut cpu = CPU::default();
+    let mut cpu = Cpu::default();
     let mut sum = 0;
     loop {
         if cpu.clock > 220 {
@@ -69,13 +69,13 @@ fn main() -> Result<()> {
             let line = lines.next().context("no new instruction")??;
 
             let instr = if line.starts_with("noop") {
-                NOOP
+                Noop
             } else if line.starts_with("addx") {
                 let (_, v) = line
                     .split_once(' ')
                     .with_context(|| format!("invalid instruction: {}", line))?;
                 let v = v.parse::<i32>()?;
-                ADDX(v)
+                Addx(v)
             } else {
                 bail!("unknown instruction: {}", line);
             };
@@ -98,7 +98,7 @@ fn main() -> Result<()> {
     let mut lines = BufReader::new(file).lines();
     let mut crt: [[bool; 40]; 6] = [[false; 40]; 6];
     let mut idx: usize = 0;
-    let mut cpu = CPU::default();
+    let mut cpu = Cpu::default();
     loop {
         if cpu.clock >= 240 {
             break;
@@ -115,13 +115,13 @@ fn main() -> Result<()> {
             let line = lines.next().context("no new instruction")??;
 
             let instr = if line.starts_with("noop") {
-                NOOP
+                Noop
             } else if line.starts_with("addx") {
                 let (_, v) = line
                     .split_once(' ')
                     .with_context(|| format!("invalid instruction: {}", line))?;
                 let v = v.parse::<i32>()?;
-                ADDX(v)
+                Addx(v)
             } else {
                 bail!("unknown instruction: {}", line);
             };
@@ -133,9 +133,9 @@ fn main() -> Result<()> {
         cpu.tick()?;
     }
 
-    for i in 0..6 {
-        for j in 0..40 {
-            if crt[i][j] {
+    for row in crt.iter() {
+        for pixel in row.iter() {
+            if *pixel {
                 print!("#");
             } else {
                 print!(".");

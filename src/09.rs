@@ -6,10 +6,10 @@ use std::io::{BufRead, BufReader};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Direction {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
+    Up,
+    Down,
+    Left,
+    Right,
 }
 use Direction::*;
 
@@ -18,10 +18,10 @@ impl TryFrom<char> for Direction {
 
     fn try_from(value: char) -> std::result::Result<Self, Self::Error> {
         match value {
-            'U' => Ok(UP),
-            'D' => Ok(DOWN),
-            'L' => Ok(LEFT),
-            'R' => Ok(RIGHT),
+            'U' => Ok(Up),
+            'D' => Ok(Down),
+            'L' => Ok(Left),
+            'R' => Ok(Right),
             c => Err(anyhow!("not a valid direction: {}", c)),
         }
     }
@@ -42,10 +42,10 @@ impl<const N: usize> Rope<N> {
     fn move_head(&mut self, direction: Direction) {
         // move head
         match direction {
-            UP => self.knots[0].0 -= 1,
-            DOWN => self.knots[0].0 += 1,
-            LEFT => self.knots[0].1 -= 1,
-            RIGHT => self.knots[0].1 += 1,
+            Up => self.knots[0].0 -= 1,
+            Down => self.knots[0].0 += 1,
+            Left => self.knots[0].1 -= 1,
+            Right => self.knots[0].1 += 1,
         };
         // propagate to tail
         for i in 1..N {

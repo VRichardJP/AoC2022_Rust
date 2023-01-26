@@ -5,9 +5,9 @@ use std::io::{BufRead, BufReader};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Shape {
-    ROCK = 0,
-    PAPER = 1,
-    SCISSOR = 2,
+    Rock = 0,
+    Paper = 1,
+    Scissor = 2,
 }
 use Shape::*;
 
@@ -16,9 +16,9 @@ impl TryFrom<i32> for Shape {
 
     fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
         match value {
-            0 => Ok(ROCK),
-            1 => Ok(PAPER),
-            2 => Ok(SCISSOR),
+            0 => Ok(Rock),
+            1 => Ok(Paper),
+            2 => Ok(Scissor),
             v => Err(anyhow!("Invalid value: {}", v)),
         }
     }
@@ -27,34 +27,34 @@ impl TryFrom<i32> for Shape {
 impl Shape {
     fn score(self) -> i32 {
         match self {
-            ROCK => 1,
-            PAPER => 2,
-            SCISSOR => 3,
+            Rock => 1,
+            Paper => 2,
+            Scissor => 3,
         }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 enum RoundResult {
-    LOSS,
-    DRAW,
-    WIN,
+    Loss,
+    Draw,
+    Win,
 }
 use RoundResult::*;
 
 impl RoundResult {
     fn score(self) -> i32 {
         match self {
-            LOSS => 0,
-            DRAW => 3,
-            WIN => 6,
+            Loss => 0,
+            Draw => 3,
+            Win => 6,
         }
     }
 }
 
 fn get_round_result(me: Shape, opponent: Shape) -> RoundResult {
     const ROUND_RESULT: [[RoundResult; 3]; 3] =
-        [[DRAW, LOSS, WIN], [WIN, DRAW, LOSS], [LOSS, WIN, DRAW]];
+        [[Draw, Loss, Win], [Win, Draw, Loss], [Loss, Win, Draw]];
     ROUND_RESULT[me as usize][opponent as usize]
 }
 
@@ -65,16 +65,16 @@ fn main() -> Result<()> {
     for line in BufReader::new(file).lines() {
         let chars: Vec<char> = line?.chars().collect();
         let opponent = match chars[0] {
-            'A' => ROCK,
-            'B' => PAPER,
-            'C' => SCISSOR,
+            'A' => Rock,
+            'B' => Paper,
+            'C' => Scissor,
             c => bail!("Unexpected character {}", c),
         };
 
         let me = match chars[2] {
-            'X' => ROCK,
-            'Y' => PAPER,
-            'Z' => SCISSOR,
+            'X' => Rock,
+            'Y' => Paper,
+            'Z' => Scissor,
             c => bail!("Unexpected character {}", c),
         };
 
@@ -88,23 +88,23 @@ fn main() -> Result<()> {
     for line in BufReader::new(file).lines() {
         let chars: Vec<char> = line?.chars().collect();
         let opponent = match chars[0] {
-            'A' => ROCK,
-            'B' => PAPER,
-            'C' => SCISSOR,
+            'A' => Rock,
+            'B' => Paper,
+            'C' => Scissor,
             c => bail!("Unexpected character {}", c),
         };
 
         let outcome = match chars[2] {
-            'X' => LOSS,
-            'Y' => DRAW,
-            'Z' => WIN,
+            'X' => Loss,
+            'Y' => Draw,
+            'Z' => Win,
             c => bail!("Unexpected character {}", c),
         };
 
         let me = match outcome {
-            LOSS => Shape::try_from(((opponent as i32) - 1).rem_euclid(3))?,
-            DRAW => opponent,
-            WIN => Shape::try_from(((opponent as i32) + 1).rem_euclid(3))?,
+            Loss => Shape::try_from(((opponent as i32) - 1).rem_euclid(3))?,
+            Draw => opponent,
+            Win => Shape::try_from(((opponent as i32) + 1).rem_euclid(3))?,
         };
 
         sum += me.score() + get_round_result(me, opponent).score();
