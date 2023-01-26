@@ -1,13 +1,13 @@
+use anyhow::{bail, Context, Result};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use anyhow::{Result, bail, Context};
 
 #[derive(Debug)]
 struct CPU {
     clock: usize,
     x: i32,
     // instruction and elapsed cycles on it
-    instr: Option<(Instruction, usize)>
+    instr: Option<(Instruction, usize)>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -19,7 +19,11 @@ use Instruction::*;
 
 impl Default for CPU {
     fn default() -> Self {
-        Self { clock: 0, x: 1, instr: None }
+        Self {
+            clock: 0,
+            x: 1,
+            instr: None,
+        }
     }
 }
 
@@ -30,13 +34,16 @@ impl CPU {
 
     fn tick(&mut self) -> Result<()> {
         self.clock += 1;
-        
+
         let mut instr = self.instr.context("cpu has no instruction")?;
         instr.1 += 1;
 
         self.instr = match instr {
             (NOOP, 1) => None,
-            (ADDX(v), 2) => { self.x += v; None },
+            (ADDX(v), 2) => {
+                self.x += v;
+                None
+            }
             _ => Some(instr),
         };
 
@@ -64,7 +71,9 @@ fn main() -> Result<()> {
             let instr = if line.starts_with("noop") {
                 NOOP
             } else if line.starts_with("addx") {
-                let (_, v) = line.split_once(' ').with_context(|| format!("invalid instruction: {}", line))?;
+                let (_, v) = line
+                    .split_once(' ')
+                    .with_context(|| format!("invalid instruction: {}", line))?;
                 let v = v.parse::<i32>()?;
                 ADDX(v)
             } else {
@@ -108,7 +117,9 @@ fn main() -> Result<()> {
             let instr = if line.starts_with("noop") {
                 NOOP
             } else if line.starts_with("addx") {
-                let (_, v) = line.split_once(' ').with_context(|| format!("invalid instruction: {}", line))?;
+                let (_, v) = line
+                    .split_once(' ')
+                    .with_context(|| format!("invalid instruction: {}", line))?;
                 let v = v.parse::<i32>()?;
                 ADDX(v)
             } else {
