@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.68"
 itertools = "0.10.5"
+num-bigint = "0.4.3"
+num-traits = "0.2.15"
 regex = "1.7.1"
 
 [[bin]]
@@ -49,3 +51,7 @@ path = "src/09.rs"
 [[bin]]
 name = "10"
 path = "src/10.rs"
+
+[[bin]]
+name = "11"
+path = "src/11.rs"
