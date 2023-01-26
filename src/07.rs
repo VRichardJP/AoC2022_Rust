@@ -86,8 +86,8 @@ fn main() -> Result<()> {
     let file = File::open("data/07.txt")?;
     let mut root: FileTree = HashMap::new();
     let mut curr_path: Vec<String> = Vec::new();
-    let mut lines = BufReader::new(file).lines();
-    while let Some(line) = lines.next() {
+    let lines = BufReader::new(file).lines();
+    for line in lines {
         let line = line?;
         let tokens = line.split(' ').collect_vec();
         match tokens[0] {

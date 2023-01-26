@@ -79,7 +79,7 @@ fn main() -> Result<()> {
             .split_once(' ')
             .with_context(|| format!("invalid line format: {line}"))?;
         let direction =
-            Direction::try_from(direction.chars().nth(0).context("empty direction string")?)?;
+            Direction::try_from(direction.chars().next().context("empty direction string")?)?;
         let steps = steps.parse::<u32>()?;
         for _ in 0..steps {
             rope.move_head(direction);
@@ -99,7 +99,7 @@ fn main() -> Result<()> {
             .split_once(' ')
             .with_context(|| format!("invalid line format: {line}"))?;
         let direction =
-            Direction::try_from(direction.chars().nth(0).context("empty direction string")?)?;
+            Direction::try_from(direction.chars().next().context("empty direction string")?)?;
         let steps = steps.parse::<u32>()?;
         for _ in 0..steps {
             rope.move_head(direction);
