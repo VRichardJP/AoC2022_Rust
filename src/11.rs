@@ -1,5 +1,5 @@
 use anyhow::Result;
-use itertools::Itertools;
+use itertools::{Itertools, izip};
 use std::collections::VecDeque;
 use std::ops::{Add, Mul};
 use std::vec::Vec;
@@ -21,8 +21,8 @@ struct ItemRem([i32; MONKEY_NB]);
 impl ItemRem {
     fn new(v: i32) -> Self {
         let mut rems = [0; MONKEY_NB];
-        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS.iter()) {
-            *r = v % *p;
+        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS) {
+            *r = v % p;
         }
         Self(rems)
     }
@@ -33,9 +33,9 @@ impl Add<i32> for ItemRem {
 
     fn add(self, rhs: i32) -> Self::Output {
         let mut rems = self.0;
-        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS.iter()) {
+        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS) {
             *r += rhs;
-            *r %= *p;
+            *r %= p;
         }
         Self(rems)
     }
@@ -46,9 +46,9 @@ impl Mul<i32> for ItemRem {
 
     fn mul(self, rhs: i32) -> Self::Output {
         let mut rems = self.0;
-        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS.iter()) {
+        for (r, p) in rems.iter_mut().zip(MONKEY_DIVS) {
             *r *= rhs;
-            *r %= *p;
+            *r %= p;
         }
         Self(rems)
     }
@@ -59,9 +59,9 @@ impl Mul<Self> for ItemRem {
 
     fn mul(self, rhs: Self) -> Self::Output {
         let mut rems = self.0;
-        for ((r1, r2), p) in rems.iter_mut().zip(rhs.0.iter()).zip(MONKEY_DIVS.iter()) {
-            *r1 *= *r2;
-            *r1 %= *p;
+        for (r1, r2, p) in izip!(rems.iter_mut(), rhs.0, MONKEY_DIVS) {
+            *r1 *= r2;
+            *r1 %= p;
         }
         Self(rems)
     }
