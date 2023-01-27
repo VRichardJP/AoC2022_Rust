@@ -1,5 +1,5 @@
 use anyhow::Result;
-use itertools::{Itertools, izip};
+use itertools::{izip, Itertools};
 use std::collections::VecDeque;
 use std::ops::{Add, Mul};
 use std::vec::Vec;
