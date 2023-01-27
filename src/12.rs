@@ -126,7 +126,7 @@ fn main() -> Result<()> {
         }
     }
 
-    // create and explore graph
+    // create and explore graph from start to goal
     let graph = DiGraphMap::<_, ()>::from_edges(edges);
     let distance_map = dijkstra(&graph, start, Some(goal), |_| 1);
     println!("{:?}", distance_map[&goal]);
@@ -201,21 +201,21 @@ fn main() -> Result<()> {
                 }
                 let (m_i, m_j) = (m_i as usize, m_j as usize);
                 if heightmap[i][j] + 1 >= heightmap[m_i][m_j] {
-                    edges.push(((i, j), (m_i, m_j)));
+                    // going reverse
+                    edges.push(((m_i, m_j), (i, j)));
                 }
             }
         }
     }
 
-    // create and explore graph
+    // create and explore graph from goal to everywhere
     let graph = DiGraphMap::<_, ()>::from_edges(edges);
-    let min_distance = starts
-        .into_iter()
-        .map(|start| dijkstra(&graph, start, Some(goal), |_| 1))
-        .filter_map(|distance_map| distance_map.get(&goal).copied())
+    let distance_map = dijkstra(&graph, goal, None, |_| 1);
+    let min_distance = distance_map
+        .iter()
+        .filter_map(|(coord, distance)| starts.contains(coord).then_some(distance))
         .min()
-        .context("No path found")?;
-
+        .context("no path found")?;
     println!("{min_distance}");
 
     Ok(())
