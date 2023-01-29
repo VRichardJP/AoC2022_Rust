@@ -50,8 +50,12 @@ impl World {
     }
 
     fn drop_sand(&mut self, x: i32, y: i32) -> Option<(i32, i32)> {
-        let (mut x, mut y) = (x, max(self.offset_y, y));
-        assert!(self.get(x, y).is_some());
+        let (mut x, mut y) = (x, y);
+        match self.get(x, y) {
+            None => return None,
+            Some(Air) => (),
+            Some(Rock) | Some(Sand) => return None,
+        }
         loop {
             // try down
             let down = (x, y + 1);
@@ -178,6 +182,13 @@ fn main() -> Result<()> {
         .max()
         .unwrap()
         .to_owned();
+
+    // make sure drop point in inside
+    let min_y = min(0, min_y);
+    let max_y = max(0, max_y);
+    let min_x = min(500, min_x);
+    let max_x = max(500, max_x);
+
     let mut world_map = World::new(min_x, min_y, max_x, max_y);
 
     // draw rocks
@@ -211,7 +222,95 @@ fn main() -> Result<()> {
         count += 1;
     }
 
-    println!("{world_map}");
+    println!("{count}");
+
+    let file = File::open("data/14.txt")?;
+    let mut polygons = Vec::new();
+    for line in BufReader::new(file).lines() {
+        let line = line?;
+        let polygon = line
+            .split(" -> ")
+            .map(|s| s.split_once(',').unwrap())
+            .map(|(x, y)| (x.parse::<i32>().unwrap(), y.parse::<i32>().unwrap()))
+            .collect::<Vec<(i32, i32)>>();
+        polygons.push(polygon);
+    }
+
+    // find world boundaries
+    let min_x = polygons
+        .iter()
+        .flatten()
+        .map(|(x, _)| x)
+        .min()
+        .unwrap()
+        .to_owned();
+    let min_y = polygons
+        .iter()
+        .flatten()
+        .map(|(_, y)| y)
+        .min()
+        .unwrap()
+        .to_owned();
+    let max_x = polygons
+        .iter()
+        .flatten()
+        .map(|(x, _)| x)
+        .max()
+        .unwrap()
+        .to_owned();
+    let max_y = polygons
+        .iter()
+        .flatten()
+        .map(|(_, y)| y)
+        .max()
+        .unwrap()
+        .to_owned();
+
+    // make sure drop point in inside
+    let min_y = min(0, min_y);
+    let max_y = max(0, max_y);
+    let min_x = min(500, min_x);
+    let max_x = max(500, max_x);
+
+    // add large enough bedrock
+    let min_x = min_x - 500;
+    let max_x = max_x + 500;
+    let max_y = max_y + 2;
+    polygons.push(vec![(min_x, max_y), (max_x, max_y)]);
+
+    let mut world_map = World::new(min_x, min_y, max_x, max_y);
+
+    // draw rocks
+    for polygon in polygons {
+        for (p0, p1) in polygon.iter().tuple_windows() {
+            if p0.0 != p1.0 {
+                assert!(p0.1 == p1.1);
+                let y = p0.1;
+                let start = min(p0.0, p1.0);
+                let last = max(p0.0, p1.0);
+                for x in start..=last {
+                    let cell = world_map.get_mut(x, y).unwrap();
+                    *cell = Rock;
+                }
+            } else {
+                assert!(p0.0 == p1.0);
+                let x = p0.0;
+                let start = min(p0.1, p1.1);
+                let last = max(p0.1, p1.1);
+                for y in start..=last {
+                    let cell = world_map.get_mut(x, y).unwrap();
+                    *cell = Rock;
+                }
+            }
+        }
+    }
+
+    // simulate sand falling
+    let mut count = 0;
+    while world_map.drop_sand(500, 0).is_some() {
+        count += 1;
+    }
+
     println!("{count}");
 
     Ok(())
