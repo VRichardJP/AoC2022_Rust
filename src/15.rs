@@ -10,16 +10,20 @@ use std::{
 
 #[derive(Debug)]
 struct Signal {
-    sensor: (i32, i32),
-    beacon: (i32, i32),
+    sensor: (i64, i64),
+    beacon: (i64, i64),
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Segment1D(i32, i32);
+struct Segment1D(i64, i64);
 
 impl Segment1D {
-    fn length(&self) -> i32 {
-        self.1 - self.0
+    fn length(&self) -> u64 {
+        (self.1 - self.0) as u64
+    }
+
+    fn is_empty(&self) -> bool {
+        self.length() == 0
     }
 
     fn intersection(&self, other: &Self) -> Option<Segment1D> {
@@ -50,7 +54,7 @@ impl Segment1D {
 }
 
 impl Signal {
-    fn dist(&self) -> i32 {
+    fn dist(&self) -> i64 {
         (self.beacon.0 - self.sensor.0).abs() + (self.beacon.1 - self.sensor.1).abs()
     }
 }
@@ -67,10 +71,10 @@ fn main() -> Result<()> {
         let caps = re
             .captures(&line)
             .with_context(|| format!("Failed to parse line: {}", &line))?;
-        let sensor_x = caps["sensor_x"].parse::<i32>()?;
-        let sensor_y = caps["sensor_y"].parse::<i32>()?;
-        let beacon_x = caps["beacon_x"].parse::<i32>()?;
-        let beacon_y = caps["beacon_y"].parse::<i32>()?;
+        let sensor_x = caps["sensor_x"].parse::<i64>()?;
+        let sensor_y = caps["sensor_y"].parse::<i64>()?;
+        let beacon_x = caps["beacon_x"].parse::<i64>()?;
+        let beacon_y = caps["beacon_y"].parse::<i64>()?;
         signals.push(Signal {
             sensor: (sensor_x, sensor_y),
             beacon: (beacon_x, beacon_y),
@@ -78,7 +82,7 @@ fn main() -> Result<()> {
     }
 
     // find segments scanned on the row y=2000000
-    const TARGET_ROW_Y: i32 = 2000000;
+    const TARGET_ROW_Y: i64 = 2000000;
     let mut segments: Vec<Segment1D> = Vec::new();
     for signal in signals.iter() {
         // check if the circle (sensor, signal.dist) intersect with target row
@@ -106,7 +110,7 @@ fn main() -> Result<()> {
     };
 
     // list beacons on target row
-    let mut beacons_on_target_row = HashSet::<(i32, i32)>::new();
+    let mut beacons_on_target_row = HashSet::<(i64, i64)>::new();
     for signal in signals.iter() {
         if signal.beacon.1 == TARGET_ROW_Y {
             beacons_on_target_row.insert(signal.beacon);
@@ -129,8 +133,63 @@ fn main() -> Result<()> {
         no_beacon_segment
     };
 
-    let no_beacon_count: i32 = segments.iter().map(|s| s.length()).sum();
+    let no_beacon_count: u64 = segments.iter().map(|s| s.length()).sum();
     println!("{no_beacon_count}");
+
+    // part 2
+    let file = File::open("data/15.txt")?;
+    let re = Regex::new(
+        r"Sensor at x=(?P<sensor_x>-?\d+), y=(?P<sensor_y>-?\d+): closest beacon is at x=(?P<beacon_x>-?\d+), y=(?P<beacon_y>-?\d+)",
+    )?;
+    let mut signals = Vec::new();
+    for line in BufReader::new(file).lines() {
+        let line = line?;
+        let caps = re
+            .captures(&line)
+            .with_context(|| format!("Failed to parse line: {}", &line))?;
+        let sensor_x = caps["sensor_x"].parse::<i64>()?;
+        let sensor_y = caps["sensor_y"].parse::<i64>()?;
+        let beacon_x = caps["beacon_x"].parse::<i64>()?;
+        let beacon_y = caps["beacon_y"].parse::<i64>()?;
+        signals.push(Signal {
+            sensor: (sensor_x, sensor_y),
+            beacon: (beacon_x, beacon_y),
+        });
+    }
+
+    // find the only position that has not been scanned
+    let mut distress_beacon = None;
+    for target_row_y in 0..4000000 {
+        let mut unscanned_x = vec![Segment1D(0, 4000000)];
+        for signal in signals.iter() {
+            // check if the circle (sensor, signal.dist) intersect with target row
+            let d = signal.dist() - (signal.sensor.1 - target_row_y).abs();
+            if d < 0 {
+                continue; // too far from target row
+            }
+            let scanned = Segment1D(signal.sensor.0 - d, signal.sensor.0 + d + 1);
+            unscanned_x = unscanned_x
+                .into_iter()
+                .flat_map(|s| s.difference(&scanned))
+                .filter(|s| !s.is_empty())
+                .collect_vec();
+            if unscanned_x.is_empty() {
+                break; // everything has been scanned
+            }
+        }
+
+        if !unscanned_x.is_empty() {
+            // found something
+            assert!(unscanned_x.len() == 1);
+            assert!(unscanned_x[0].length() == 1);
+            distress_beacon = Some(Segment1D(unscanned_x[0].0, target_row_y));
+            break; // assume to be the only 1
+        }
+    }
+
+    let distress_beacon = distress_beacon.context("did not find distress beacon")?;
+    let tuning_frequency = distress_beacon.0 * 4000000 + distress_beacon.1;
+    println!("{tuning_frequency}");
 
     Ok(())
 }
