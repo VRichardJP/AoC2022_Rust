@@ -34,6 +34,18 @@ struct World {
     size_y: usize,
 }
 
+impl Display for World {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for i in 0..self.size_y {
+            for j in 0..self.size_x {
+                write!(f, "{}", self.raw_data[i * self.size_x + j])?;
+            }
+            writeln!(f)?;
+        }
+        write!(f, "")
+    }
+}
+
 impl World {
     fn new(min_x: i32, min_y: i32, max_x: i32, max_y: i32) -> Self {
         assert!(min_x < max_x);
@@ -47,6 +59,28 @@ impl World {
             size_x,
             size_y,
         }
+    }
+
+    fn get(&self, x: i32, y: i32) -> Option<&WorldCell> {
+        if x < self.offset_x
+            || y < self.offset_y
+            || x >= self.offset_x + self.size_x as i32
+            || y >= self.offset_y + self.size_y as i32
+        {
+            return None;
+        }
+        let i = (y - self.offset_y) as usize;
+        let j = (x - self.offset_x) as usize;
+        self.raw_data.get(i * self.size_x + j)
+    }
+
+    fn get_mut(&mut self, x: i32, y: i32) -> Option<&mut WorldCell> {
+        if x < self.offset_x || y < self.offset_y {
+            return None;
+        }
+        let i = (y - self.offset_y) as usize;
+        let j = (x - self.offset_x) as usize;
+        self.raw_data.get_mut(i * self.size_x + j)
     }
 
     fn drop_sand(&mut self, x: i32, y: i32) -> Option<(i32, i32)> {
@@ -100,42 +134,6 @@ impl World {
             *self.get_mut(x, y).unwrap() = Sand;
             return Some((x, y));
         }
-    }
-}
-
-impl Display for World {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for i in 0..self.size_y {
-            for j in 0..self.size_x {
-                write!(f, "{}", self.raw_data[i * self.size_x + j])?;
-            }
-            writeln!(f)?;
-        }
-        write!(f, "")
-    }
-}
-
-impl World {
-    fn get(&self, x: i32, y: i32) -> Option<&WorldCell> {
-        if x < self.offset_x
-            || y < self.offset_y
-            || x >= self.offset_x + self.size_x as i32
-            || y >= self.offset_y + self.size_y as i32
-        {
-            return None;
-        }
-        let i = (y - self.offset_y) as usize;
-        let j = (x - self.offset_x) as usize;
-        self.raw_data.get(i * self.size_x + j)
-    }
-
-    fn get_mut(&mut self, x: i32, y: i32) -> Option<&mut WorldCell> {
-        if x < self.offset_x || y < self.offset_y {
-            return None;
-        }
-        let i = (y - self.offset_y) as usize;
-        let j = (x - self.offset_x) as usize;
-        self.raw_data.get_mut(i * self.size_x + j)
     }
 }
 
