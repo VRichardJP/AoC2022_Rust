@@ -76,7 +76,7 @@ fn depth_first(
         let closed_valves = closed_valves
             .iter()
             .filter(|&next_id| *next_id != candidate.next_id)
-            .map(|next_id| next_id.to_owned())
+            .copied()
             .collect_vec();
         let remaining_time = remaining_time - candidate.distance - 1;
         let curr_pressure = curr_pressure + candidate.gain;
@@ -167,7 +167,36 @@ fn main() -> Result<()> {
     }
 
     // search the best pressure in a tree fashion, depth first
-    let best_pressure = depth_first(&valve_arena, start_id, target_valves, 30, 0, 0);
+    let best_pressure = depth_first(&valve_arena, start_id, target_valves.clone(), 30, 0, 0);
+    println!("{best_pressure}");
+
+    // part 2
+
+    // best pressure when working alone
+    let mut best_pressure = best_pressure;
+
+    // find best pressure when work is slit in 2, but with 4 minutes less
+    for i in 1..target_valves.len() / 2 {
+        for valves1 in target_valves.iter().copied().combinations(i) {
+            let valves2 = target_valves
+                .iter()
+                .filter(|&id| !valves1.contains(id))
+                .copied()
+                .collect_vec();
+            // first worker
+            let pressure1 = depth_first(&valve_arena, start_id, valves1, 26, 0, 0);
+            // second worker
+            let total_pressure = depth_first(
+                &valve_arena,
+                start_id,
+                valves2,
+                26,
+                pressure1,
+                best_pressure,
+            );
+            best_pressure = max(best_pressure, total_pressure);
+        }
+    }
     println!("{best_pressure}");
 
     Ok(())
