@@ -1,14 +1,13 @@
 use anyhow::Result;
 use itertools::Itertools;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+
+const INPUT: &str = include_str!("../data/08.txt");
 
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/08.txt")?;
     let mut forest_matrix = Vec::new();
-    for line in BufReader::new(file).lines() {
-        let line = line?.chars().map(|c| c.to_digit(10).unwrap()).collect_vec();
+    for line in INPUT.lines() {
+        let line = line.chars().map(|c| c.to_digit(10).unwrap()).collect_vec();
         forest_matrix.push(line);
     }
     let forest_matrix = forest_matrix;

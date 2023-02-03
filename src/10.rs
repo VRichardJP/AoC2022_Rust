@@ -1,6 +1,4 @@
 use anyhow::{bail, Context, Result};
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 
 #[derive(Debug)]
 struct Cpu {
@@ -53,10 +51,11 @@ impl Cpu {
 
 static INSPECTION: [usize; 6] = [20, 60, 100, 140, 180, 220];
 
+const INPUT: &str = include_str!("../data/10.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/10.txt")?;
-    let mut lines = BufReader::new(file).lines();
+    let mut lines = INPUT.lines();
     let mut cpu = Cpu::default();
     let mut sum = 0;
     loop {
@@ -66,7 +65,7 @@ fn main() -> Result<()> {
 
         if cpu.instr.is_none() {
             // load new instruction
-            let line = lines.next().context("no new instruction")??;
+            let line = lines.next().context("no new instruction")?;
 
             let instr = if line.starts_with("noop") {
                 Noop
@@ -94,8 +93,7 @@ fn main() -> Result<()> {
     println!("{sum}");
 
     // part 2
-    let file = File::open("data/10.txt")?;
-    let mut lines = BufReader::new(file).lines();
+    let mut lines = INPUT.lines();
     let mut crt: [[bool; 40]; 6] = [[false; 40]; 6];
     let mut idx: usize = 0;
     let mut cpu = Cpu::default();
@@ -112,7 +110,7 @@ fn main() -> Result<()> {
 
         if cpu.instr.is_none() {
             // load new instruction
-            let line = lines.next().context("no new instruction")??;
+            let line = lines.next().context("no new instruction")?;
 
             let instr = if line.starts_with("noop") {
                 Noop

@@ -1,13 +1,11 @@
 use anyhow::{Context, Result};
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+
+const INPUT: &str = include_str!("../data/04.txt");
 
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/04.txt")?;
     let mut count: i32 = 0;
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let (first, second) = line
             .split_once(',')
             .with_context(|| format!("Invalid line format: {}", &line))?;
@@ -32,10 +30,8 @@ fn main() -> Result<()> {
     println!("{}", count);
 
     // part 2
-    let file = File::open("data/04.txt")?;
     let mut count: i32 = 0;
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let (first, second) = line
             .split_once(',')
             .with_context(|| format!("Invalid line format: {}", &line))?;

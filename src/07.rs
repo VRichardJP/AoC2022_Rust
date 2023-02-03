@@ -1,11 +1,6 @@
 use anyhow::{bail, Context, Result};
 use itertools::Itertools;
-use std::{
-    cmp::min,
-    collections::HashMap,
-    fs::File,
-    io::{BufRead, BufReader},
-};
+use std::{cmp::min, collections::HashMap};
 
 type FileTree = HashMap<String, FileEntry>;
 
@@ -81,14 +76,13 @@ fn find_smallest_dir_size(tree: &FileTree, min_size: usize) -> usize {
     })
 }
 
+const INPUT: &str = include_str!("../data/07.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/07.txt")?;
     let mut root: FileTree = HashMap::new();
     let mut curr_path: Vec<String> = Vec::new();
-    let lines = BufReader::new(file).lines();
-    for line in lines {
-        let line = line?;
+    for line in INPUT.lines() {
         let tokens = line.split(' ').collect_vec();
         match tokens[0] {
             "$" => {

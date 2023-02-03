@@ -1,11 +1,12 @@
 use anyhow::Result;
 use itertools::Itertools;
 
+const INPUT: &str = include_str!("../data/06.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let bytes = std::fs::read("data/06.txt")?;
     let mut i = 4;
-    for window in bytes.windows(4) {
+    for window in INPUT.as_bytes().windows(4) {
         if window.iter().all_unique() {
             break;
         }
@@ -14,9 +15,8 @@ fn main() -> Result<()> {
     println!("{i}");
 
     // part 1
-    let bytes = std::fs::read("data/06.txt")?;
     let mut i = 14;
-    for window in bytes.windows(14) {
+    for window in INPUT.as_bytes().windows(14) {
         if window.iter().all_unique() {
             break;
         }

@@ -6,7 +6,6 @@ use petgraph::{graphmap::GraphMap, Directed};
 use regex::Regex;
 use std::cmp::max;
 use std::collections::HashMap;
-use std::fs;
 
 #[derive(Debug, Default)]
 struct ValveData {
@@ -102,6 +101,8 @@ fn depth_first(
     best_pressure
 }
 
+const INPUT: &str = include_str!("../data/16.txt");
+
 fn main() -> Result<()> {
     // part 1
     let re = Regex::new(
@@ -111,7 +112,7 @@ fn main() -> Result<()> {
     // parse input file
     let mut valve_arena = ValveArena::new();
     let mut valve_id_lookup_map = HashMap::<String, ValveId>::new();
-    for line in fs::read_to_string("data/16.txt")?.lines() {
+    for line in INPUT.lines() {
         let caps = re
             .captures(line)
             .with_context(|| format!("Failed to parse line: {}", &line))?;

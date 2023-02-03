@@ -1,7 +1,5 @@
 use anyhow::{anyhow, bail, Result};
 use std::char;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Shape {
@@ -58,12 +56,13 @@ fn get_round_result(me: Shape, opponent: Shape) -> RoundResult {
     ROUND_RESULT[me as usize][opponent as usize]
 }
 
+const INPUT: &str = include_str!("../data/02.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/02.txt")?;
     let mut sum = 0;
-    for line in BufReader::new(file).lines() {
-        let chars: Vec<char> = line?.chars().collect();
+    for line in INPUT.lines() {
+        let chars: Vec<char> = line.chars().collect();
         let opponent = match chars[0] {
             'A' => Rock,
             'B' => Paper,
@@ -83,10 +82,9 @@ fn main() -> Result<()> {
     println!("{}", sum);
 
     // part 2
-    let file = File::open("data/02.txt")?;
     let mut sum = 0;
-    for line in BufReader::new(file).lines() {
-        let chars: Vec<char> = line?.chars().collect();
+    for line in INPUT.lines() {
+        let chars: Vec<char> = line.chars().collect();
         let opponent = match chars[0] {
             'A' => Rock,
             'B' => Paper,

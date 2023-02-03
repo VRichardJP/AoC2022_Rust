@@ -1,14 +1,12 @@
 use anyhow::Result;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+
+const INPUT: &str = include_str!("../data/01.txt");
 
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/01.txt")?;
     let mut max = 0;
     let mut curr = 0;
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         if line.is_empty() {
             max = std::cmp::max(max, curr);
             curr = 0;
@@ -19,11 +17,9 @@ fn main() -> Result<()> {
     println!("{}", max);
 
     // part 2
-    let file = File::open("data/01.txt")?;
     let mut top3 = [0; 3];
     let mut curr = 0;
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         if line.is_empty() {
             let mut tmp = top3.to_vec();
             tmp.push(curr);

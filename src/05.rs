@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use regex::Regex;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+
+const INPUT: &str = include_str!("../data/05.txt");
 
 fn main() -> Result<()> {
     // Initial setup:
@@ -27,12 +27,10 @@ fn main() -> Result<()> {
         vec!['B', 'Z', 'T', 'F', 'H', 'N', 'D', 'J'],
         vec!['H', 'L', 'Q', 'N', 'B', 'F', 'T'],
     ];
-    let file = File::open("data/05.txt")?;
     let re = Regex::new(r"move (?P<move>\d*) from (?P<from>\d) to (?P<to>\d)")?;
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let caps = re
-            .captures(&line)
+            .captures(line)
             .with_context(|| format!("Failed to parse line: {}", &line))?;
         let mut nb = caps["move"].parse::<i32>()?;
         let from = (caps["from"].parse::<i32>()? - 1) as usize;
@@ -58,12 +56,10 @@ fn main() -> Result<()> {
         vec!['B', 'Z', 'T', 'F', 'H', 'N', 'D', 'J'],
         vec!['H', 'L', 'Q', 'N', 'B', 'F', 'T'],
     ];
-    let file = File::open("data/05.txt")?;
     let re = Regex::new(r"move (?P<move>\d*) from (?P<from>\d) to (?P<to>\d)")?;
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let caps = re
-            .captures(&line)
+            .captures(line)
             .with_context(|| format!("Failed to parse line: {}", &line))?;
         let nb = caps["move"].parse::<i32>()?;
         let from = (caps["from"].parse::<i32>()? - 1) as usize;

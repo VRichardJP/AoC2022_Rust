@@ -1,8 +1,6 @@
 use anyhow::anyhow;
 use anyhow::{Context, Result};
 use std::collections::HashSet;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Direction {
@@ -67,14 +65,14 @@ impl<const N: usize> Rope<N> {
     }
 }
 
+const INPUT: &str = include_str!("../data/09.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/09.txt")?;
     let mut rope = Rope::<2>::default();
     let mut visited = HashSet::<(i32, i32)>::new();
     visited.insert(rope.get_tail());
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let (direction, steps) = line
             .split_once(' ')
             .with_context(|| format!("invalid line format: {line}"))?;
@@ -89,12 +87,10 @@ fn main() -> Result<()> {
     println!("{}", visited.len());
 
     // part 2
-    let file = File::open("data/09.txt")?;
     let mut rope = Rope::<10>::default();
     let mut visited = HashSet::<(i32, i32)>::new();
     visited.insert(rope.get_tail());
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let (direction, steps) = line
             .split_once(' ')
             .with_context(|| format!("invalid line format: {line}"))?;

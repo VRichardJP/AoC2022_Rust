@@ -4,8 +4,6 @@ use regex::Regex;
 use std::{
     cmp::{max, min},
     collections::HashSet,
-    fs::File,
-    io::{BufRead, BufReader},
 };
 
 #[derive(Debug)]
@@ -59,17 +57,17 @@ impl Signal {
     }
 }
 
+const INPUT: &str = include_str!("../data/15.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/15.txt")?;
     let re = Regex::new(
         r"Sensor at x=(?P<sensor_x>-?\d+), y=(?P<sensor_y>-?\d+): closest beacon is at x=(?P<beacon_x>-?\d+), y=(?P<beacon_y>-?\d+)",
     )?;
     let mut signals = Vec::new();
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let caps = re
-            .captures(&line)
+            .captures(line)
             .with_context(|| format!("Failed to parse line: {}", &line))?;
         let sensor_x = caps["sensor_x"].parse::<i64>()?;
         let sensor_y = caps["sensor_y"].parse::<i64>()?;
@@ -137,15 +135,13 @@ fn main() -> Result<()> {
     println!("{no_beacon_count}");
 
     // part 2
-    let file = File::open("data/15.txt")?;
     let re = Regex::new(
         r"Sensor at x=(?P<sensor_x>-?\d+), y=(?P<sensor_y>-?\d+): closest beacon is at x=(?P<beacon_x>-?\d+), y=(?P<beacon_y>-?\d+)",
     )?;
     let mut signals = Vec::new();
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let caps = re
-            .captures(&line)
+            .captures(line)
             .with_context(|| format!("Failed to parse line: {}", &line))?;
         let sensor_x = caps["sensor_x"].parse::<i64>()?;
         let sensor_y = caps["sensor_y"].parse::<i64>()?;

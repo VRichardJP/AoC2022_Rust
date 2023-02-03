@@ -1,11 +1,7 @@
 use anyhow::{Context, Result};
 use itertools::Itertools;
 use petgraph::{algo::dijkstra, graphmap::DiGraphMap};
-use std::{
-    fs::File,
-    io::Read,
-    ops::{Index, IndexMut},
-};
+use std::ops::{Index, IndexMut};
 
 struct Matrix<T> {
     raw_data: Vec<T>,
@@ -48,15 +44,13 @@ impl<T> IndexMut<usize> for Matrix<T> {
     }
 }
 
+const INPUT: &str = include_str!("../data/12.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let mut file = File::open("data/12.txt")?;
-    let mut heightmap = String::new();
-    file.read_to_string(&mut heightmap)?;
-
     // convert into a matrix of char
-    let row_length = heightmap.lines().next().context("empty heightmap")?.len();
-    let flat_heightmap = heightmap
+    let row_length = INPUT.lines().next().context("empty heightmap")?.len();
+    let flat_heightmap = INPUT
         .lines()
         .flat_map(|line| line.chars().collect_vec())
         .collect_vec();
@@ -132,13 +126,9 @@ fn main() -> Result<()> {
     println!("{:?}", distance_map[&goal]);
 
     // part 2
-    let mut file = File::open("data/12.txt")?;
-    let mut heightmap = String::new();
-    file.read_to_string(&mut heightmap)?;
-
     // convert into a matrix of char
-    let row_length = heightmap.lines().next().context("empty heightmap")?.len();
-    let flat_heightmap = heightmap
+    let row_length = INPUT.lines().next().context("empty heightmap")?.len();
+    let flat_heightmap = INPUT
         .lines()
         .flat_map(|line| line.chars().collect_vec())
         .collect_vec();

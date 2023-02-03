@@ -1,8 +1,4 @@
-use std::{
-    cmp::Ordering,
-    fs::File,
-    io::{BufRead, BufReader},
-};
+use std::cmp::Ordering;
 
 use anyhow::{Context, Result};
 use itertools::Itertools;
@@ -103,23 +99,23 @@ impl PartialEq for PacketData {
 
 impl Eq for PacketData {}
 
+const INPUT: &str = include_str!("../data/13.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/13.txt")?;
-    let lines = BufReader::new(file).lines();
     let mut sum = 0;
-    for (i, (left, right)) in lines
-        .filter_map(|l| l.ok())
+    for (i, (left, right)) in INPUT
+        .lines()
         .chunks(3)
         .into_iter()
         .map(|chunk| chunk.take(2).collect_tuple::<(_, _)>().unwrap())
         .enumerate()
     {
-        let (_, left_packet) = parse_root(&left)
+        let (_, left_packet) = parse_root(left)
             // Note: nom errors keep reference to the original &str, which cannot leave the function scope.
             // Hence the .to_owned() call to duplicate the contained strings.
             .map_err(|err| err.to_owned())?;
-        let (_, right_packet) = parse_root(&right)
+        let (_, right_packet) = parse_root(right)
             // Note: nom errors keep reference to the original &str, which cannot leave the function scope.
             // Hence the .to_owned() call to duplicate the contained strings.
             .map_err(|err| err.to_owned())?;
@@ -131,20 +127,18 @@ fn main() -> Result<()> {
     println!("{sum}");
 
     // part 2
-    let file = File::open("data/13.txt")?;
-    let lines = BufReader::new(file).lines();
     let mut packets = Vec::new();
-    for (left, right) in lines
-        .filter_map(|l| l.ok())
+    for (left, right) in INPUT
+        .lines()
         .chunks(3)
         .into_iter()
         .map(|chunk| chunk.take(2).collect_tuple::<(_, _)>().unwrap())
     {
-        let (_, left_packet) = parse_root(&left)
+        let (_, left_packet) = parse_root(left)
             // Note: nom errors keep reference to the original &str, which cannot leave the function scope.
             // Hence the .to_owned() call to duplicate the contained strings.
             .map_err(|err| err.to_owned())?;
-        let (_, right_packet) = parse_root(&right)
+        let (_, right_packet) = parse_root(right)
             // Note: nom errors keep reference to the original &str, which cannot leave the function scope.
             // Hence the .to_owned() call to duplicate the contained strings.
             .map_err(|err| err.to_owned())?;

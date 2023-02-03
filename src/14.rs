@@ -3,8 +3,6 @@ use itertools::Itertools;
 use std::{
     cmp::{max, min},
     fmt::Display,
-    fs::File,
-    io::{BufRead, BufReader},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -137,12 +135,12 @@ impl World {
     }
 }
 
+const INPUT: &str = include_str!("../data/14.txt");
+
 fn main() -> Result<()> {
     // part 1
-    let file = File::open("data/14.txt")?;
     let mut polygons = Vec::new();
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let polygon = line
             .split(" -> ")
             .map(|s| s.split_once(',').unwrap())
@@ -222,10 +220,8 @@ fn main() -> Result<()> {
 
     println!("{count}");
 
-    let file = File::open("data/14.txt")?;
     let mut polygons = Vec::new();
-    for line in BufReader::new(file).lines() {
-        let line = line?;
+    for line in INPUT.lines() {
         let polygon = line
             .split(" -> ")
             .map(|s| s.split_once(',').unwrap())
