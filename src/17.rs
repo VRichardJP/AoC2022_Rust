@@ -1,4 +1,7 @@
-use std::fmt::Display;
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    fmt::Display,
+};
 
 use anyhow::{bail, Result};
 
@@ -26,6 +29,15 @@ impl Display for Chamber {
         }
         writeln!(f, "+-------+")
     }
+}
+
+// entirely describe relevant part of the simulation
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct SimulationState {
+    rock_idx: usize,
+    jet_shift_idx: usize,
+    // each column distance to tower height
+    top_level: [usize; 7],
 }
 
 // compact bottom to top representation of each rock in a 4x7 matrix
@@ -158,6 +170,150 @@ fn main() -> Result<()> {
         }
     }
     println!("{}", chamber.tower_height);
+
+    // part 2
+    let jet_shift = INPUT.as_bytes();
+    let mut jet_shift_idx = 0;
+    let mut rock_idx = 0;
+    let mut chamber = Chamber::default();
+    let mut states = HashMap::<SimulationState, (usize, usize)>::new();
+    // if a loop is detected, simply skip as many iterations as we can and count them at the end of the simulation
+    let mut skipped_height = None;
+    let mut k = 0;
+    const STOP_K: usize = 1000000000000;
+    while k < STOP_K {
+        // try to detect loop in the simulation
+        if skipped_height.is_none() {
+            let mut top_level = [0; 7];
+            for (i, h) in top_level.iter_mut().enumerate() {
+                while chamber.tower_height > *h
+                    && chamber.rows[chamber.tower_height - *h - 1] >> (7 - i) == 0
+                {
+                    *h += 1;
+                }
+            }
+            let state = SimulationState {
+                rock_idx,
+                jet_shift_idx,
+                top_level,
+            };
+            if let Entry::Vacant(e) = states.entry(state) {
+                e.insert((k, chamber.tower_height));
+            } else {
+                // simulation is looping
+                let (loop_k_start, loop_height_start) = states[&state];
+                let (loop_k_end, loop_height_end) = (k, chamber.tower_height);
+                let loop_k_length = loop_k_end - loop_k_start;
+                let loop_height = loop_height_end - loop_height_start;
+                let skipped_looped_nb = (STOP_K - k) / loop_k_length;
+                // fast forwarding
+                skipped_height = Some(skipped_looped_nb * loop_height);
+                k += skipped_looped_nb * loop_k_length;
+            }
+        }
+
+        // add a new rock in the chamber
+        let mut rock = ROCKS[rock_idx];
+        rock_idx = (rock_idx + 1) % ROCKS.len();
+        // position of the rock in the chamber
+        let mut rock_height = chamber.tower_height + 3;
+        // make sure the chamber is high enough to contain the rock
+        chamber.rows.resize(rock_height + rock.len(), 0);
+
+        // until the rock is stopped
+        loop {
+            let shift = jet_shift[jet_shift_idx] as char;
+            jet_shift_idx = (jet_shift_idx + 1) % jet_shift.len();
+
+            // try to shift the rock left/right
+            rock = match shift {
+                '<' => {
+                    // check if we can shift left
+                    if rock.iter().all(|bits| bits & 0b10000000 == 0) {
+                        let mut shifted_rock = rock;
+                        for bits in &mut shifted_rock {
+                            *bits <<= 1;
+                        }
+                        // check if any collision would occur
+                        let chamber_buf =
+                            &chamber.rows[rock_height..rock_height + shifted_rock.len()];
+                        let has_collision = chamber_buf
+                            .iter()
+                            .zip(shifted_rock.iter())
+                            .any(|(b0, b1)| b0 & b1 != 0);
+                        if has_collision {
+                            rock // can't shift
+                        } else {
+                            shifted_rock // ok
+                        }
+                    } else {
+                        rock // can't shift
+                    }
+                }
+                '>' => {
+                    // check if we can shift right
+                    if rock.iter().all(|bits| bits & 0b00000010 == 0) {
+                        let mut shifted_rock = rock;
+                        for bits in &mut shifted_rock {
+                            *bits >>= 1;
+                            *bits &= 0b11111110; // reset 8th bit (outside the chamber)
+                        }
+                        // check if any collision would occur
+                        let chamber_buf =
+                            &chamber.rows[rock_height..rock_height + shifted_rock.len()];
+                        let has_collision = chamber_buf
+                            .iter()
+                            .zip(shifted_rock.iter())
+                            .any(|(b0, b1)| b0 & b1 != 0);
+                        if has_collision {
+                            rock // can't shift
+                        } else {
+                            shifted_rock // ok
+                        }
+                    } else {
+                        rock // can't shift
+                    }
+                }
+                c => bail!("unexpected char: {c}"),
+            };
+
+            // check if the rock can fall down
+            if rock_height == 0 {
+                break; // reached bottom
+            }
+            let chamber_buf = &chamber.rows[rock_height - 1..rock_height - 1 + rock.len()];
+            let has_collision = chamber_buf
+                .iter()
+                .zip(rock.iter())
+                .any(|(b0, b1)| b0 & b1 != 0);
+            if has_collision {
+                break; // hit something
+            }
+
+            // the rock felt 1 unit down
+            rock_height -= 1;
+        }
+
+        // fix the rock
+        for (row, rock_bits) in chamber.rows[rock_height..rock_height + rock.len()]
+            .iter_mut()
+            .zip(rock.iter())
+        {
+            *row |= rock_bits;
+        }
+
+        // update tower height
+        for i in (0..chamber.rows.len()).rev() {
+            if chamber.rows[i] != 0 {
+                chamber.tower_height = i + 1;
+                break;
+            }
+        }
+
+        k += 1;
+    }
+    let total_height = chamber.tower_height + skipped_height.unwrap_or(0);
+    println!("{total_height}");
 
     Ok(())
 }
