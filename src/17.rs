@@ -1,11 +1,13 @@
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{
+        hash_map::{DefaultHasher, Entry},
+        HashMap,
+    },
     fmt::Display,
-    hash::Hash,
+    hash::{Hash, Hasher},
 };
 
 use anyhow::{bail, Result};
-use itertools::Itertools;
 
 #[derive(Default, Clone)]
 struct Chamber {
@@ -31,14 +33,6 @@ impl Display for Chamber {
         }
         writeln!(f, "+-------+")
     }
-}
-
-// entirely describe relevant part of the simulation
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct SimulationState {
-    rock_idx: usize,
-    jet_shift_idx: usize,
-    top_level: Vec<u8>,
 }
 
 // compact bottom to top representation of each rock in a 4x7 matrix
@@ -177,14 +171,18 @@ fn main() -> Result<()> {
     let mut jet_shift_idx = 0;
     let mut rock_idx = 0;
     let mut chamber = Chamber::default();
-    let mut states = HashMap::<SimulationState, (usize, usize)>::new();
+    // hashmap of tower top level hash and (k, tower_height) values
+    let mut states = HashMap::<u64, (usize, usize)>::new();
     // if a loop is detected, simply skip as many iterations as we can and count them at the end of the simulation
     let mut skipped_height = None;
     let mut k = 0;
     const STOP_K: usize = 1000000000000;
     while k < STOP_K {
         // try to detect loop in the simulation
+        // if a loop is found we can trivially predict the height of the tower over the looped section
         if skipped_height.is_none() {
+            // extract tower top level
+            // only the top level shape is relevant for the simulation (new rocks cannot reach what is below)
             let mut top_level_height = 0;
             for i in 0..7 {
                 let mut h = 0;
@@ -195,26 +193,26 @@ fn main() -> Result<()> {
                 }
                 top_level_height = top_level_height.max(h);
             }
-            let top_level = chamber.rows
-                [(chamber.tower_height - top_level_height)..chamber.tower_height]
-                .iter()
-                .copied()
-                .collect_vec();
-            let state = SimulationState {
-                rock_idx,
-                jet_shift_idx,
-                top_level,
-            };
-            if let Entry::Vacant(e) = states.entry(state.clone()) {
+            let top_level =
+                &chamber.rows[(chamber.tower_height - top_level_height)..chamber.tower_height];
+            // calculate hash of simulation state: current rock, shift instruction and tower top level shape
+            let mut hasher = DefaultHasher::new();
+            rock_idx.hash(&mut hasher);
+            jet_shift_idx.hash(&mut hasher);
+            top_level.hash(&mut hasher);
+            let state_hash = hasher.finish();
+            // check if this state has ever been reached
+            if let Entry::Vacant(e) = states.entry(state_hash) {
+                // new state
                 e.insert((k, chamber.tower_height));
             } else {
-                // simulation is looping
-                let (loop_k_start, loop_height_start) = states[&state];
+                // already reached the same state before: simulation is looping
+                let (loop_k_start, loop_height_start) = states[&state_hash];
                 let (loop_k_end, loop_height_end) = (k, chamber.tower_height);
                 let loop_k_length = loop_k_end - loop_k_start;
                 let loop_height = loop_height_end - loop_height_start;
                 let skipped_looped_nb = (STOP_K - k) / loop_k_length;
-                // fast forwarding
+                // fast forwarding many loops
                 skipped_height = Some(skipped_looped_nb * loop_height);
                 k += skipped_looped_nb * loop_k_length;
             }
