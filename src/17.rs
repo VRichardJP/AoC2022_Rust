@@ -1,9 +1,11 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
     fmt::Display,
+    hash::Hash,
 };
 
 use anyhow::{bail, Result};
+use itertools::Itertools;
 
 #[derive(Default, Clone)]
 struct Chamber {
@@ -32,12 +34,11 @@ impl Display for Chamber {
 }
 
 // entirely describe relevant part of the simulation
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct SimulationState {
     rock_idx: usize,
     jet_shift_idx: usize,
-    // each column distance to tower height
-    top_level: [usize; 7],
+    top_level: Vec<u8>,
 }
 
 // compact bottom to top representation of each rock in a 4x7 matrix
@@ -184,20 +185,27 @@ fn main() -> Result<()> {
     while k < STOP_K {
         // try to detect loop in the simulation
         if skipped_height.is_none() {
-            let mut top_level = [0; 7];
-            for (i, h) in top_level.iter_mut().enumerate() {
-                while chamber.tower_height > *h
-                    && chamber.rows[chamber.tower_height - *h - 1] >> (7 - i) == 0
+            let mut top_level_height = 0;
+            for i in 0..7 {
+                let mut h = 0;
+                while chamber.tower_height > h
+                    && chamber.rows[chamber.tower_height - h - 1] >> (7 - i) == 0
                 {
-                    *h += 1;
+                    h += 1;
                 }
+                top_level_height = top_level_height.max(h);
             }
+            let top_level = chamber.rows
+                [(chamber.tower_height - top_level_height)..chamber.tower_height]
+                .iter()
+                .copied()
+                .collect_vec();
             let state = SimulationState {
                 rock_idx,
                 jet_shift_idx,
                 top_level,
             };
-            if let Entry::Vacant(e) = states.entry(state) {
+            if let Entry::Vacant(e) = states.entry(state.clone()) {
                 e.insert((k, chamber.tower_height));
             } else {
                 // simulation is looping
