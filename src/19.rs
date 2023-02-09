@@ -1,60 +1,109 @@
 use anyhow::{Context, Result};
+use regex::Regex;
+use std::ops::{Index, IndexMut};
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
-const INPUT: &str = include_str!("../data/19.txt");
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter)]
+enum Mineral {
+    Ore,
+    Clay,
+    Obsidian,
+    Geode,
+}
+use Mineral::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+struct Minerals<T>
+where
+    T: Clone + Copy + PartialEq + Eq + Default,
+{
+    ore: T,
+    clay: T,
+    obsidian: T,
+    geode: T,
+}
+
+impl<T> Index<Mineral> for Minerals<T>
+where
+    T: Clone + Copy + PartialEq + Eq + Default,
+{
+    type Output = T;
+
+    fn index(&self, index: Mineral) -> &Self::Output {
+        match index {
+            Ore => &self.ore,
+            Clay => &self.clay,
+            Obsidian => &self.obsidian,
+            Geode => &self.geode,
+        }
+    }
+}
+
+impl<T> IndexMut<Mineral> for Minerals<T>
+where
+    T: Clone + Copy + PartialEq + Eq + Default,
+{
+    fn index_mut(&mut self, index: Mineral) -> &mut Self::Output {
+        match index {
+            Ore => &mut self.ore,
+            Clay => &mut self.clay,
+            Obsidian => &mut self.obsidian,
+            Geode => &mut self.geode,
+        }
+    }
+}
+
+type UInt = u32;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct State {
-    remaining_time: u32,
-    // resources
-    ore: u32,
-    clay: u32,
-    obsidian: u32,
-    geode: u32,
-    // workers
-    ore_robot: u32,
-    clay_robot: u32,
-    obsidian_robot: u32,
-    geode_robot: u32,
+    remaining_time: UInt,
+    resources: Minerals<UInt>,
+    robots: Minerals<UInt>,
 }
 
-#[derive(Debug, Clone, Copy)]
-struct BuildCost {
-    ore_cost: u32,
-    clay_cost: u32,
-    obsidian_cost: u32,
+#[derive(Debug)]
+struct OreRobotCost {
+    ore_cost: UInt,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
+struct ClayRobotCost {
+    ore_cost: UInt,
+}
+
+#[derive(Debug)]
+struct ObsidianRobotCost {
+    ore_cost: UInt,
+    clay_cost: UInt,
+}
+
+#[derive(Debug)]
+struct GeodeRobotCost {
+    ore_cost: UInt,
+    obsidian_cost: UInt,
+}
+
+// type Blueprint = Minerals<Minerals<UInt>>;
+#[derive(Debug)]
 struct Blueprint {
-    ore_robot_cost: BuildCost,
-    clay_robot_cost: BuildCost,
-    obsidian_robot_cost: BuildCost,
-    geode_robot_cost: BuildCost,
+    ore_robot: OreRobotCost,
+    clay_robot: ClayRobotCost,
+    obsidian_robot: ObsidianRobotCost,
+    geode_robot: GeodeRobotCost,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum BuildAction {
-    OreRobot,
-    ClayRobot,
-    ObsidianRobot,
-    GeodeRobot,
-}
-use regex::Regex;
-use BuildAction::*;
+struct BuildRobot(Mineral);
 
 impl State {
     // initial state
-    fn new(remaining_time: u32) -> Self {
+    fn new(remaining_time: UInt, initial_robots: Minerals<UInt>) -> Self {
         Self {
             remaining_time,
-            ore: 0,
-            clay: 0,
-            obsidian: 0,
-            geode: 0,
-            ore_robot: 1,
-            clay_robot: 0,
-            obsidian_robot: 0,
-            geode_robot: 0,
+            resources: Minerals::<UInt>::default(),
+            robots: initial_robots,
         }
     }
 }
@@ -62,58 +111,65 @@ impl State {
 // give an optimistic estimate of maximum geode production
 // since we don't know which build order is optimal, we simply assume all robots
 // can be built simultaneously without extra cost
-fn get_high_bound_geode_production(state: &State, blueprint: &Blueprint) -> u32 {
+fn get_high_bound_geode_production(state: &State, blueprint: &Blueprint) -> UInt {
     let mut state = *state;
-    let mut built_ore_robot = 0;
-    let mut built_clay_robot = 0;
-    let mut built_obsidian_robot = 0;
-    let mut built_geode_robot = 0;
+    let mut built_robots = Minerals::<UInt>::default();
     while state.remaining_time > 0 {
         state.remaining_time -= 1;
-        state.ore += state.ore_robot + built_ore_robot;
-        state.clay += state.clay_robot + built_clay_robot;
-        state.obsidian += state.obsidian_robot + built_obsidian_robot;
-        state.geode += state.geode_robot + built_geode_robot;
-        built_ore_robot = state.ore / blueprint.ore_robot_cost.ore_cost;
-        built_clay_robot = state.ore / blueprint.clay_robot_cost.ore_cost;
-        built_obsidian_robot = std::cmp::min(
-            state.ore / blueprint.obsidian_robot_cost.ore_cost,
-            state.clay / blueprint.obsidian_robot_cost.clay_cost,
+        // mining minerals
+        for mineral in Mineral::iter() {
+            state.resources[mineral] += state.robots[mineral] + built_robots[mineral];
+        }
+        // building more mining robots
+        // assume each type of robot can be built at the same time
+        built_robots[Ore] = state.resources[Ore] / blueprint.ore_robot.ore_cost;
+        built_robots[Clay] = state.resources[Ore] / blueprint.clay_robot.ore_cost;
+        built_robots[Obsidian] = std::cmp::min(
+            state.resources[Ore] / blueprint.obsidian_robot.ore_cost,
+            state.resources[Clay] / blueprint.obsidian_robot.clay_cost,
         );
-        built_geode_robot = std::cmp::min(
-            state.ore / blueprint.geode_robot_cost.ore_cost,
-            state.obsidian / blueprint.geode_robot_cost.obsidian_cost,
+        built_robots[Geode] = std::cmp::min(
+            state.resources[Ore] / blueprint.geode_robot.ore_cost,
+            state.resources[Obsidian] / blueprint.geode_robot.obsidian_cost,
         );
     }
-    state.geode
+    state.resources[Geode]
 }
 
 // step forward 1 minute, assume the action is possible
-fn step(state: &State, blueprint: &Blueprint, action: Option<BuildAction>) -> State {
+fn step(state: &State, blueprint: &Blueprint, action: Option<BuildRobot>) -> State {
     let mut next = *state;
+    // tick
     next.remaining_time -= 1;
-    next.ore += state.ore_robot;
-    next.clay += state.clay_robot;
-    next.obsidian += state.obsidian_robot;
-    next.geode += state.geode_robot;
+    // mining minerals
+    for mineral in Mineral::iter() {
+        next.resources[mineral] += state.robots[mineral];
+    }
+    // execute robot build action (if any)
     match action {
-        Some(OreRobot) => {
-            next.ore -= blueprint.ore_robot_cost.ore_cost;
-            next.ore_robot += 1;
+        Some(BuildRobot(Ore)) => {
+            assert!(next.resources[Ore] >= blueprint.ore_robot.ore_cost);
+            next.resources[Ore] -= blueprint.ore_robot.ore_cost;
+            next.robots[Ore] += 1;
         }
-        Some(ClayRobot) => {
-            next.ore -= blueprint.clay_robot_cost.ore_cost;
-            next.clay_robot += 1;
+        Some(BuildRobot(Clay)) => {
+            assert!(next.resources[Ore] >= blueprint.clay_robot.ore_cost);
+            next.resources[Ore] -= blueprint.clay_robot.ore_cost;
+            next.robots[Clay] += 1;
         }
-        Some(ObsidianRobot) => {
-            next.ore -= blueprint.obsidian_robot_cost.ore_cost;
-            next.clay -= blueprint.obsidian_robot_cost.clay_cost;
-            next.obsidian_robot += 1;
+        Some(BuildRobot(Obsidian)) => {
+            assert!(next.resources[Ore] >= blueprint.obsidian_robot.ore_cost);
+            assert!(next.resources[Clay] >= blueprint.obsidian_robot.clay_cost);
+            next.resources[Ore] -= blueprint.obsidian_robot.ore_cost;
+            next.resources[Clay] -= blueprint.obsidian_robot.clay_cost;
+            next.robots[Obsidian] += 1;
         }
-        Some(GeodeRobot) => {
-            next.ore -= blueprint.geode_robot_cost.ore_cost;
-            next.obsidian -= blueprint.geode_robot_cost.obsidian_cost;
-            next.geode_robot += 1;
+        Some(BuildRobot(Geode)) => {
+            assert!(next.resources[Ore] >= blueprint.geode_robot.ore_cost);
+            assert!(next.resources[Obsidian] >= blueprint.geode_robot.obsidian_cost);
+            next.resources[Ore] -= blueprint.geode_robot.ore_cost;
+            next.resources[Obsidian] -= blueprint.geode_robot.obsidian_cost;
+            next.robots[Geode] += 1;
         }
         None => (),
     };
@@ -121,34 +177,42 @@ fn step(state: &State, blueprint: &Blueprint, action: Option<BuildAction>) -> St
 }
 
 // list possible actions in order for a depth first search (poping element from back)
-fn get_possible_actions(state: &State, blueprint: &Blueprint) -> Vec<Option<BuildAction>> {
+fn get_possible_actions(state: &State, blueprint: &Blueprint) -> Vec<Option<BuildRobot>> {
     let mut possible_actions = Vec::new();
-    // there is no point in saving ressources if we can build everything
+    // waiting is only a valid strategy we lack resources to build more robots
     let mut is_saving_valid_strategy = false;
-    if state.ore >= blueprint.ore_robot_cost.ore_cost {
-        possible_actions.push(Some(OreRobot));
-    } else if state.ore_robot > 0 {
+    if state.resources[Ore] >= blueprint.ore_robot.ore_cost {
+        // have enough resources
+        possible_actions.push(Some(BuildRobot(Ore)));
+    } else if state.robots[Ore] > 0 {
+        // not enough resources yet, but could just wait
         is_saving_valid_strategy = true;
     }
-    if state.ore >= blueprint.clay_robot_cost.ore_cost {
-        possible_actions.push(Some(ClayRobot));
-    } else if state.ore_robot > 0 {
+    if state.resources[Ore] >= blueprint.clay_robot.ore_cost {
+        // have enough resources
+        possible_actions.push(Some(BuildRobot(Clay)));
+    } else if state.robots[Ore] > 0 {
+        // not enough resources yet, but could just wait
         is_saving_valid_strategy = true;
     }
-    if state.ore >= blueprint.obsidian_robot_cost.ore_cost
-        && state.clay >= blueprint.obsidian_robot_cost.clay_cost
+    if state.resources[Ore] >= blueprint.obsidian_robot.ore_cost
+        && state.resources[Clay] >= blueprint.obsidian_robot.clay_cost
     {
-        possible_actions.push(Some(ObsidianRobot));
-    } else if state.ore_robot > 0 && state.clay_robot > 0 {
+        // have enough resources
+        possible_actions.push(Some(BuildRobot(Obsidian)));
+    } else if state.robots[Ore] > 0 && state.robots[Clay] > 0 {
+        // not enough resources yet, but could just wait
         is_saving_valid_strategy = true;
     }
-    if state.ore >= blueprint.geode_robot_cost.ore_cost
-        && state.obsidian >= blueprint.geode_robot_cost.obsidian_cost
+    if state.resources[Ore] >= blueprint.geode_robot.ore_cost
+        && state.resources[Obsidian] >= blueprint.geode_robot.obsidian_cost
     {
-        possible_actions.push(Some(GeodeRobot));
-    } else if state.ore_robot > 0 && state.obsidian_robot > 0 {
+        // have enough resources
+        possible_actions.push(Some(BuildRobot(Geode)));
+    } else if state.robots[Ore] > 0 && state.robots[Obsidian] > 0 {
+        // not enough resources yet, but could just wait
         is_saving_valid_strategy = true;
-    } 
+    }
     if is_saving_valid_strategy {
         possible_actions.push(None);
     }
@@ -156,11 +220,11 @@ fn get_possible_actions(state: &State, blueprint: &Blueprint) -> Vec<Option<Buil
 }
 
 // A* search (depth first) of highest geode production
-fn get_best_geode_production(state: &State, blueprint: &Blueprint) -> u32 {
-    let mut to_explore = vec![(*state, Vec::new())];
+fn get_best_geode_production(state: &State, blueprint: &Blueprint) -> UInt {
+    let mut to_explore = vec![*state];
     let mut best_geode_prod = 0;
 
-    while let Some((state, history)) = to_explore.pop() {
+    while let Some(state) = to_explore.pop() {
         if get_high_bound_geode_production(&state, blueprint) <= best_geode_prod {
             // we have already found better
             continue;
@@ -168,18 +232,18 @@ fn get_best_geode_production(state: &State, blueprint: &Blueprint) -> u32 {
         let actions = get_possible_actions(&state, blueprint);
         for action in actions {
             let next = step(&state, blueprint, action);
-            let mut next_history = history.clone();
-            next_history.push(action);
             if next.remaining_time == 0 {
-                best_geode_prod = best_geode_prod.max(next.geode);
+                best_geode_prod = best_geode_prod.max(next.resources[Geode]);
             } else {
-                to_explore.push((next, next_history));
+                to_explore.push(next);
             }
         }
     }
 
     best_geode_prod
 }
+
+const INPUT: &str = include_str!("../data/19.txt");
 
 fn main() -> Result<()> {
     // part 1
@@ -191,40 +255,40 @@ fn main() -> Result<()> {
         let caps = re
             .captures(line)
             .with_context(|| format!("failed to parse line: {line}"))?;
-        let id = caps["id"].parse::<u32>()?;
-        let ore_robot_cost = BuildCost {
-            ore_cost: caps["ore_robot_ore_cost"].parse::<u32>()?,
-            clay_cost: 0,
-            obsidian_cost: 0,
+        let id = caps["id"].parse::<UInt>()?;
+        let ore_robot = OreRobotCost {
+            ore_cost: caps["ore_robot_ore_cost"].parse::<UInt>()?,
         };
-        let clay_robot_cost = BuildCost {
-            ore_cost: caps["clay_robot_ore_cost"].parse::<u32>()?,
-            clay_cost: 0,
-            obsidian_cost: 0,
+        let clay_robot = ClayRobotCost {
+            ore_cost: caps["clay_robot_ore_cost"].parse::<UInt>()?,
         };
-        let obsidian_robot_cost = BuildCost {
-            ore_cost: caps["obsidian_robot_ore_cost"].parse::<u32>()?,
-            clay_cost: caps["obsidian_robot_clay_cost"].parse::<u32>()?,
-            obsidian_cost: 0,
+        let obsidian_robot = ObsidianRobotCost {
+            ore_cost: caps["obsidian_robot_ore_cost"].parse::<UInt>()?,
+            clay_cost: caps["obsidian_robot_clay_cost"].parse::<UInt>()?,
         };
-        let geode_robot_cost = BuildCost {
-            ore_cost: caps["geode_robot_ore_cost"].parse::<u32>()?,
-            clay_cost: 0,
-            obsidian_cost: caps["geode_robot_obsidian_cost"].parse::<u32>()?,
+        let geode_robot = GeodeRobotCost {
+            ore_cost: caps["geode_robot_ore_cost"].parse::<UInt>()?,
+            obsidian_cost: caps["geode_robot_obsidian_cost"].parse::<UInt>()?,
         };
         let blueprint = Blueprint {
-            ore_robot_cost,
-            clay_robot_cost,
-            obsidian_robot_cost,
-            geode_robot_cost,
+            ore_robot,
+            clay_robot,
+            obsidian_robot,
+            geode_robot,
         };
         blueprints.push((id, blueprint));
     }
 
     let mut sum_quality = 0;
     for (id, blueprint) in blueprints.iter() {
-        let state = State::new(24);
-        let best_geo_production = get_best_geode_production(&state, &blueprint);
+        let state = State::new(
+            24,
+            Minerals {
+                ore: 1,
+                ..Default::default()
+            },
+        );
+        let best_geo_production = get_best_geode_production(&state, blueprint);
         let quality = id * best_geo_production;
         sum_quality += quality;
     }
@@ -233,12 +297,17 @@ fn main() -> Result<()> {
     // part 2
     let mut product_quality = 1;
     for (_, blueprint) in blueprints.iter().take(3) {
-        let state = State::new(32);
-        let best_geo_production = get_best_geode_production(&state, &blueprint);
+        let state = State::new(
+            32,
+            Minerals {
+                ore: 1,
+                ..Default::default()
+            },
+        );
+        let best_geo_production = get_best_geode_production(&state, blueprint);
         product_quality *= best_geo_production;
     }
     println!("{product_quality}");
-
 
     Ok(())
 }
