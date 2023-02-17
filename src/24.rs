@@ -1,4 +1,7 @@
-use std::{ops::{Add, AddAssign, Index, IndexMut}, collections::HashSet};
+use std::{
+    collections::HashSet,
+    ops::{Add, AddAssign, Index, IndexMut},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Coord(i32, i32);
@@ -19,7 +22,10 @@ impl AddAssign for Coord {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Orientation {
-    Up, Right, Down, Left
+    Up,
+    Right,
+    Down,
+    Left,
 }
 use Orientation::*;
 
@@ -45,7 +51,7 @@ enum Cell {
     Empty,
     Wall,
     // number of blizzards on the cell
-    Blizzard(u8)
+    Blizzard(u8),
 }
 use Cell::*;
 
@@ -96,11 +102,11 @@ impl World {
                 Empty | Wall => panic!("corrupted map data"),
                 Blizzard(n) => {
                     if n > 1 {
-                        Blizzard(n-1)
+                        Blizzard(n - 1)
                     } else {
                         Empty
                     }
-                },
+                }
             };
             // move blizzard
             blizzard.position += blizzard.orientation.unit();
@@ -109,16 +115,16 @@ impl World {
                 blizzard.position.0 = (self.world_map.rows - 2) as i32;
             } else if blizzard.position.1 == 0 {
                 blizzard.position.1 = (self.world_map.cols - 2) as i32;
-            } else if blizzard.position.0 == (self.world_map.rows - 1) as i32{
+            } else if blizzard.position.0 == (self.world_map.rows - 1) as i32 {
                 blizzard.position.0 = 1;
-            } else if blizzard.position.1 == (self.world_map.cols - 1) as i32{
+            } else if blizzard.position.1 == (self.world_map.cols - 1) as i32 {
                 blizzard.position.1 = 1;
             }
             // add new blizzard position on the map
             self.world_map[blizzard.position] = match self.world_map[blizzard.position] {
                 Empty => Blizzard(1),
                 Wall => panic!("corrupted map data"),
-                Blizzard(n) => Blizzard(n+1),
+                Blizzard(n) => Blizzard(n + 1),
             };
         }
     }
@@ -136,7 +142,13 @@ fn get_fastest_time(world: &mut World, start: Coord, goal: Coord) -> usize {
         // list all reachable positions
         let mut next_reached = HashSet::new();
         for p in reached {
-            for motion in [Coord(0,0), Up.unit(), Right.unit(), Down.unit(), Left.unit()] {
+            for motion in [
+                Coord(0, 0),
+                Up.unit(),
+                Right.unit(),
+                Down.unit(),
+                Left.unit(),
+            ] {
                 let next_p = p + motion;
                 // check if we could move to the new position
                 if let Some(Empty) = world.world_map.get(next_p) {
@@ -166,20 +178,32 @@ fn main() {
             let cell = match char {
                 '#' => Wall,
                 '.' => Empty,
-                '^' => Blizzard(1), 
-                '>' => Blizzard(1), 
-                'v' => Blizzard(1), 
-                '<' => Blizzard(1), 
+                '^' => Blizzard(1),
+                '>' => Blizzard(1),
+                'v' => Blizzard(1),
+                '<' => Blizzard(1),
                 _ => panic!("Unexpected character: '{char}'"),
             };
             raw_world_map.push(cell);
             // update blizzards
             match char {
-                '^' => blizzards.push(Blizzard {position: Coord(i as i32, j as i32), orientation: Up }),
-                '>' => blizzards.push(Blizzard {position: Coord(i as i32, j as i32), orientation: Right }),
-                'v' => blizzards.push(Blizzard {position: Coord(i as i32, j as i32), orientation: Down }),
-                '<' => blizzards.push(Blizzard {position: Coord(i as i32, j as i32), orientation: Left }),
-                _ => ()
+                '^' => blizzards.push(Blizzard {
+                    position: Coord(i as i32, j as i32),
+                    orientation: Up,
+                }),
+                '>' => blizzards.push(Blizzard {
+                    position: Coord(i as i32, j as i32),
+                    orientation: Right,
+                }),
+                'v' => blizzards.push(Blizzard {
+                    position: Coord(i as i32, j as i32),
+                    orientation: Down,
+                }),
+                '<' => blizzards.push(Blizzard {
+                    position: Coord(i as i32, j as i32),
+                    orientation: Left,
+                }),
+                _ => (),
             }
         }
         if cols != 0 {
@@ -193,19 +217,19 @@ fn main() {
         world_map: WorldMap {
             raw: raw_world_map,
             rows,
-            cols
+            cols,
         },
         blizzards,
     };
 
-    let entrance = Coord(0,1);
-    let exit = Coord((rows-1) as i32, (cols-2) as i32);
+    let entrance = Coord(0, 1);
+    let exit = Coord((rows - 1) as i32, (cols - 2) as i32);
 
     // part 1
     let mut best_time = get_fastest_time(&mut world, entrance, exit);
     println!("{best_time}");
 
-    // part 2 
+    // part 2
     // go back to entrance, then go to exit gain
     best_time += get_fastest_time(&mut world, exit, entrance);
     best_time += get_fastest_time(&mut world, entrance, exit);
